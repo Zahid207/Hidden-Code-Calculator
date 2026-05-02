@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    font-family: 'Comfortaa', cursive;
+  }
+
+  body {
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .calculator {
+    width: 100%;
+    height: 100vh;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Display ── */
+  .display-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 28px 20px;
+  }
+
+  .display-expression {
+    font-size: clamp(14px, 3vw, 20px);
+    color: #555;
+    text-align: right;
+    min-height: 24px;
+    word-break: break-all;
+    line-height: 1.3;
+  }
+
+  .display-value {
+    font-size: clamp(36px, 10vw, 64px);
+    font-weight: 300;
+    color: #fff;
+    text-align: right;
+    word-break: break-all;
+    line-height: 1.1;
+    margin-top: 4px;
+    transition: font-size 0.15s ease;
+  }
+
+  .display-value.love-msg {
+    font-size: clamp(30px, 5vw, 42px);
+    color: #fff;
+    animation: loveFadeIn 1.0s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    line-height: 1.4;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  @keyframes loveFadeIn {
+    0%   { opacity: 0; transform: translateX(20px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+
+  .display-value.error { color: #ff6b6b; }
+
+  /* divider */
+  .divider {
+    height: 1px;
+    background: #1a1a1a;
+  }
+
+  /* ── Mode row ── */
+  .mode-row {
+    display: flex;
+    padding: 8px 16px 4px;
+    gap: 6px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #444;
+    font-family: 'Comfortaa', cursive;
+    font-size: clamp(10px, 2vw, 13px);
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 6px 0;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .mode-btn.active {
+    color: #f97316;
+    background: rgba(249,115,22,0.1);
+  }
+
+  /* ── Sci toggle (portrait only) ── */
+  .sci-toggle-row {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 20px 4px;
+  }
+
+  .sci-toggle {
+    background: transparent;
+    border: 1px solid #222;
+    color: #444;
+    font-family: 'Comfortaa', cursive;
+    font-size: 11px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .sci-toggle.open {
+    color: #f97316;
+    border-color: #f97316;
+    background: rgba(249,115,22,0.08);
+  }
+
+  /* ── Scientific panel (portrait: hidden grid, toggleable) ── */
+  .sci-panel {
+    display: none;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    padding: 0 8px 4px;
+  }
+
+  .sci-panel.visible { display: grid; }
+
+  .btn-sci {
+    height: 44px;
+    background: transparent;
+    border: none;
+    color: #888;
+    font-family: 'Comfortaa', cursive;
+    font-size: clamp(11px, 2vw, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-sci:active { background: #1a1a1a; color: #f97316; }
+
+  /* ── Main button grid ── */
+  .btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    padding: 0 8px 12px;
+  }
+
+  .btn {
+    height: clamp(56px, 10vh, 80px);
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #fff;
+    font-family: 'Comfortaa', cursive;
+    font-size: clamp(20px, 4vw, 28px);
+    font-weight: 400;
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn:active { background: #1c1c1c; }
+  .btn-num:active { background: #1a1a1a; }
+
+  .btn-op {
+    color: #f97316;
+    font-size: clamp(22px, 4vw, 30px);
+  }
+  .btn-op:active { background: rgba(249,115,22,0.12); }
+
+  .btn-fn {
+    color: #888;
+    font-size: clamp(16px, 3vw, 22px);
+  }
+  .btn-fn:active { background: #1a1a1a; }
+
+  .btn-eq {
+    background: #f97316;
+    color: #fff;
+    font-size: clamp(24px, 4vw, 34px);
+    border-radius: 30%;
+    width: clamp(56px, 9vh, 72px);
+    height: clamp(56px, 9vh, 72px);
+    margin: auto;
+  }
+  .btn-eq:active { background: #ea6c10; }
+
+  .btn-zero {
+    justify-content: flex-start;
+    padding-left: 28px;
+  }
+
+  /* ── LANDSCAPE: SCI panel as top row ── */
+  @media (orientation: landscape) {
+    .calculator {
+      height: 100vh;
+    }
+
+    /* hide the toggle button */
+    .sci-toggle-row { display: none; }
+
+    /* sci panel always visible as a row on top of keypad */
+    .sci-panel {
+      display: grid !important;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 4px 8px;
+      border-top: 1px solid #1a1a1a;
+    }
+
+    .btn-sci {
+      height: clamp(32px, 6vh, 48px);
+    }
+
+    .display-area {
+      padding: 0 24px 12px;
+    }
+
+    .btn {
+      height: clamp(44px, 9vh, 64px);
+    }
+
+    .btn-eq {
+      width: clamp(42px, 8vh, 58px);
+      height: clamp(42px, 8vh, 58px);
+    }
+  }
+
+  /* Ripple */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    transform: scale(0);
+    animation: rippleAnim 0.4s linear;
+    pointer-events: none;
+  }
+
+  @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="calculator">
+
+  <div class="display-area">
+    <div class="display-expression" id="expression"></div>
+    <div class="display-value" id="display">0</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="mode-row">
+    <button class="mode-btn active" id="modeDeg" onclick="setMode('deg')">DEG</button>
+    <button class="mode-btn" id="modeRad" onclick="setMode('rad')">RAD</button>
+    <button class="mode-btn" id="modeGrad" onclick="setMode('grad')">GRAD</button>
+  </div>
+
+  <div class="sci-toggle-row">
+    <button class="sci-toggle" id="sciToggle" onclick="toggleSci()">SCI ▾</button>
+  </div>
+
+  <div class="sci-panel" id="sciPanel">
+    <button class="btn-sci" onclick="inputFn('sin(')">sin</button>
+    <button class="btn-sci" onclick="inputFn('cos(')">cos</button>
+    <button class="btn-sci" onclick="inputFn('tan(')">tan</button>
+    <button class="btn-sci" onclick="inputFn('log(')">log</button>
+    <button class="btn-sci" onclick="inputFn('ln(')">ln</button>
+    <button class="btn-sci" onclick="inputFn('asin(')">asin</button>
+    <button class="btn-sci" onclick="inputFn('acos(')">acos</button>
+    <button class="btn-sci" onclick="inputFn('atan(')">atan</button>
+    <button class="btn-sci" onclick="inputFn('sqrt(')">√</button>
+    <button class="btn-sci" onclick="inputFn('**')">xʸ</button>
+    <button class="btn-sci" onclick="inputFn('Math.PI')">π</button>
+    <button class="btn-sci" onclick="inputFn('Math.E')">e</button>
+    <button class="btn-sci" onclick="inputFn('(')">(</button>
+    <button class="btn-sci" onclick="inputFn(')')">)</button>
+    <button class="btn-sci" onclick="toggleSign()">±</button>
+  </div>
+
+  <div class="btn-grid">
+    <button class="btn btn-fn" onclick="clearAll()">C</button>
+    <button class="btn btn-fn" onclick="backspace()">⌫</button>
+    <button class="btn btn-fn" onclick="inputFn('%')">%</button>
+    <button class="btn btn-op" onclick="inputOp('/')">÷</button>
+
+    <button class="btn btn-num" onclick="inputNum('7')">7</button>
+    <button class="btn btn-num" onclick="inputNum('8')">8</button>
+    <button class="btn btn-num" onclick="inputNum('9')">9</button>
+    <button class="btn btn-op" onclick="inputOp('*')">×</button>
+
+    <button class="btn btn-num" onclick="inputNum('4')">4</button>
+    <button class="btn btn-num" onclick="inputNum('5')">5</button>
+    <button class="btn btn-num" onclick="inputNum('6')">6</button>
+    <button class="btn btn-op" onclick="inputOp('-')">−</button>
+
+    <button class="btn btn-num" onclick="inputNum('1')">1</button>
+    <button class="btn btn-num" onclick="inputNum('2')">2</button>
+    <button class="btn btn-num" onclick="inputNum('3')">3</button>
+    <button class="btn btn-op" onclick="inputOp('+')">+</button>
+
+    <button class="btn btn-num btn-zero" onclick="inputNum('0')" style="grid-column:span 2">0</button>
+    <button class="btn btn-num" onclick="inputNum('.')">.</button>
+    <button class="btn btn-eq" onclick="calculate()">=</button>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  ✦ SECRET CODES — edit this array to add/remove codes
+//  Format: { code: "what user types", message: "what displays" }
+// ============================================================
+const SECRET_CODES = [
+  { code: "143",   message: "I Love You ❤️" },
+  { code: "1437",  message: "I Love You Forever 💕" },
+];
+// ============================================================
+
+let currentInput = '';
+let expression   = '';
+let resultShown  = false;
+let angleMode    = 'deg';
+let loveMode     = false;
+let sciOpen      = false;
+
+const displayEl = document.getElementById('display');
+const exprEl    = document.getElementById('expression');
+
+function setMode(mode) {
+  angleMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+}
+
+function toggleSci() {
+  sciOpen = !sciOpen;
+  document.getElementById('sciPanel').classList.toggle('visible', sciOpen);
+  document.getElementById('sciToggle').classList.toggle('open', sciOpen);
+  document.getElementById('sciToggle').textContent = sciOpen ? 'SCI ▴' : 'SCI ▾';
+}
+
+function toRadians(val) {
+  if (angleMode === 'rad')  return val;
+  if (angleMode === 'grad') return val * Math.PI / 200;
+  return val * Math.PI / 180;
+}
+
+function checkSecretCode(input) {
+  const clean = input.replace(/\s/g, '');
+  if (!/^[\d%]+$/.test(clean)) return null;
+  if (!clean.includes('%')) return null;
+  const digits = clean.replace(/%/g, '');
+  for (const entry of SECRET_CODES) {
+    if (digits === entry.code) return entry.message;
+  }
+  return null;
+}
+
+function showLoveMessage(msg) {
+  loveMode = true;
+  displayEl.className = 'display-value love-msg';
+  displayEl.textContent = msg;
+  exprEl.textContent = '';
+  currentInput = '';
+  expression = '';
+  setTimeout(() => { if (loveMode) resetDisplay(); }, 5000);
+}
+
+function resetDisplay() {
+  loveMode = false;
+  displayEl.className = 'display-value';
+  displayEl.style.fontSize = '';
+  displayEl.textContent = '0';
+  exprEl.textContent = '';
+  currentInput = '';
+  expression = '';
+  resultShown = false;
+}
+
+function updateDisplay(val, expr) {
+  displayEl.className = 'display-value';
+  displayEl.textContent = val || '0';
+  exprEl.textContent = expr || '';
+  const len = (val || '').length;
+  displayEl.style.fontSize = len > 12 ? 'clamp(20px,5vw,28px)' : len > 9 ? 'clamp(28px,6vw,38px)' : '';
+}
+
+function inputNum(n) {
+  if (loveMode) { loveMode = false; clearAll(); }
+  if (resultShown) { currentInput = ''; expression = ''; resultShown = false; }
+  currentInput += n;
+  updateDisplay(currentInput, expression);
+}
+
+function inputOp(op) {
+  if (loveMode) { loveMode = false; clearAll(); return; }
+  resultShown = false;
+  currentInput += op;
+  updateDisplay(currentInput, expression);
+}
+
+function inputFn(fn) {
+  if (loveMode) { loveMode = false; clearAll(); return; }
+  if (resultShown) { expression = currentInput; currentInput = ''; resultShown = false; }
+  currentInput += fn;
+  updateDisplay(currentInput, expression);
+}
+
+function clearAll() {
+  loveMode = false;
+  currentInput = ''; expression = ''; resultShown = false;
+  displayEl.className = 'display-value';
+  displayEl.style.fontSize = '';
+  displayEl.textContent = '0';
+  exprEl.textContent = '';
+}
+
+function backspace() {
+  if (loveMode) { resetDisplay(); return; }
+  if (resultShown) { clearAll(); return; }
+  currentInput = currentInput.slice(0, -1);
+  updateDisplay(currentInput || '0', expression);
+}
+
+function toggleSign() {
+  if (!currentInput || currentInput === '0') return;
+  currentInput = currentInput.startsWith('-') ? currentInput.slice(1) : '-' + currentInput;
+  updateDisplay(currentInput, expression);
+}
+
+function calculate() {
+  if (loveMode) { resetDisplay(); return; }
+  if (!currentInput) return;
+  const secretMsg = checkSecretCode(currentInput);
+  if (secretMsg) { showLoveMessage(secretMsg); return; }
+
+  expression = currentInput + ' =';
+  let expr = currentInput
+    .replace(/sin\(/g,  'Math.sin(toRadians(')
+    .replace(/cos\(/g,  'Math.cos(toRadians(')
+    .replace(/tan\(/g,  'Math.tan(toRadians(')
+    .replace(/asin\(/g, '(180/Math.PI)*Math.asin(')
+    .replace(/acos\(/g, '(180/Math.PI)*Math.acos(')
+    .replace(/atan\(/g, '(180/Math.PI)*Math.atan(')
+    .replace(/log\(/g,  'Math.log10(')
+    .replace(/ln\(/g,   'Math.log(')
+    .replace(/sqrt\(/g, 'Math.sqrt(');
+
+  const open  = (expr.match(/\(/g) || []).length;
+  const close = (expr.match(/\)/g) || []).length;
+  expr += ')'.repeat(Math.max(0, open - close));
+
+  try {
+    let result = Function('"use strict"; return (' + expr + ')')();
+    if (typeof result !== 'number' || !isFinite(result)) throw new Error();
+    result = parseFloat(result.toPrecision(12));
+    currentInput = String(result);
+    resultShown  = true;
+    updateDisplay(currentInput, expression);
+  } catch {
+    displayEl.className = 'display-value error';
+    displayEl.textContent = 'Error';
+    exprEl.textContent = expression;
+    currentInput = ''; resultShown = true;
+    setTimeout(() => {
+      if (!loveMode) {
+        displayEl.className = 'display-value';
+        displayEl.style.fontSize = '';
+        displayEl.textContent = '0';
+        exprEl.textContent = '';
+        resultShown = false;
+      }
+    }, 1500);
+  }
+}
+
+// Ripple
+document.querySelectorAll('.btn, .btn-sci').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const r = document.createElement('span');
+    r.classList.add('ripple');
+    const rect = this.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    this.appendChild(r);
+    setTimeout(() => r.remove(), 400);
+  });
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if ('0123456789'.includes(e.key)) inputNum(e.key);
+  else if (e.key === '.')           inputNum('.');
+  else if (e.key === '+')           inputOp('+');
+  else if (e.key === '-')           inputOp('-');
+  else if (e.key === '*')           inputOp('*');
+  else if (e.key === '/') { e.preventDefault(); inputOp('/'); }
+  else if (e.key === 'Enter' || e.key === '=') calculate();
+  else if (e.key === 'Backspace')   backspace();
+  else if (e.key === 'Escape')      clearAll();
+  else if (e.key === '(')           inputFn('(');
+  else if (e.key === ')')           inputFn(')');
+});
+</script>
+</body>
+</html>
